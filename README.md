@@ -1,0 +1,2 @@
+sublime-switch-case
+===================
