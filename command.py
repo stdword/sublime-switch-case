@@ -14,5 +14,6 @@ class SwitchCaseCommand(sublime_plugin.TextCommand):
             if not text:
                 continue
 
-            text = switch_case(text)
-            self.view.replace(edit, region, text)
+            new_text = switch_case(text)
+            if new_text != text:
+                self.view.replace(edit, region, new_text)
