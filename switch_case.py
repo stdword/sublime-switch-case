@@ -4,13 +4,12 @@ import sublime
 import sublime_plugin
 
 
+class UnknownCase(Exception):
+    pass
+
+
 def detect_case(text):
-    '''
-        Если текст состоит из букв, цифр и _, то это underscore.
-        Если текст состоит из букв, цифр, то это camel.
-    '''
-    replaced = text.replace('_', '')
-    if not replaced.isalnum():
+    if not text.replace('_', '').isalnum():
         return 'other'
 
     if text.find('_') != -1:
@@ -34,6 +33,18 @@ def translate_to_camel_case(text, titled=False):
     return ''.join(words)
 
 
+def switch_case(text):
+    case = detect_case(text)
+    if case == 'camel':
+        text = translate_to_underscore_case(text)
+    elif case == 'underscore':
+        text = translate_to_camel_case(text)
+    else:
+        raise UnknownCase()
+
+    return text
+
+
 class SwitchCaseCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         for region in self.view.sel():
@@ -41,13 +52,9 @@ class SwitchCaseCommand(sublime_plugin.TextCommand):
             if not text:
                 continue
 
-            case = detect_case(text)
-            if case == 'camel':
-                text = translate_to_underscore_case(text)
-            elif case == 'underscore':
-                text = translate_to_camel_case(text)
-            else:
+            try:
+                text = switch_case(text)
+                self.view.replace(edit, region, text)
+            except UnknownCase:
                 sublime.status_message('Unknown case type')
                 continue
-
-            self.view.replace(edit, region, text)
