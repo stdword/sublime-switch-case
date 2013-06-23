@@ -1,5 +1,8 @@
 # coding: utf-8
 
+import re
+from functools import wraps
+
 import sublime
 import sublime_plugin
 
@@ -8,13 +11,41 @@ class UnknownCase(Exception):
     pass
 
 
+def ignore_enclosed_underscores(f):
+    @wraps
+    def wrapper(text):
+        m = re.match(r'^(_*)(.*?)(_*)$', text)
+        return m.group(1) + f(m.group(2)) + m.group(3)
+    return wrapper
+
+
+@ignore_enclosed_underscores
 def detect_case(text):
-    if not text.replace('_', '').isalnum():
+    """
+    Detects the case of `text`.
+    Consequent underscores treats as single.
+    Saves case (low or up) of characters in non important places.
+
+    @param text: str
+    @returns one of ['camel', 'title', 'underscore', 'other']
+    """
+
+    splitted = filter(bool, text.split('_'))
+
+    if not splitted:
+        # text is collection of underscores
         return 'other'
 
-    if text.find('_') != -1:
-            return 'underscore'
-    return 'camel'
+    if not all(part.isalnum() for part in splitted):
+        # one or more text part contains not alpha-numeric characters
+        return 'other'
+
+    if len(splitted) != 1:
+        return 'underscore'
+
+    if splitted[0][0].isupper():  # check first character
+        return 'title'
+    return 'camel'  # first character lower or not letter
 
 
 def translate_to_underscore_case(text):
