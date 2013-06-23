@@ -1,77 +1,110 @@
 # coding: utf-8
 
+from __future__ import unicode_literals
+
 import re
-from functools import wraps
+from functools import wraps, partial
+from operator import methodcaller
 
 import sublime
 import sublime_plugin
 
 
 class UnknownCase(Exception):
-    pass
+    def __init__(self, text):
+        super(UnknownCase, self).__init__(
+            'Unknown case for "{}"'.format(
+                strip_end_of_long_string(text, max_size=50)
+            ),
+            text,
+        )
 
 
-def ignore_enclosed_underscores(f):
-    @wraps
+def strip_end_of_long_string(string, max_size=79, end_plug='...'):
+    stripped = string[:max_size]
+    if end_plug:
+        if len(stripped) != len(string):
+            stripped = stripped[:-len(end_plug)] + end_plug
+    return stripped
+
+
+def ignore_enclosed_underscores(func):
+    @wraps(func)
     def wrapper(text):
         m = re.match(r'^(_*)(.*?)(_*)$', text)
-        return m.group(1) + f(m.group(2)) + m.group(3)
+        return m.group(1) + func(m.group(2)) + m.group(3)
     return wrapper
 
 
-@ignore_enclosed_underscores
+def translate_to_underscore_case(parts):
+    return '_'.join(part[0].lower() + part[1:] for part in parts)
+
+
+def translate_to_camel_case(parts, titled=False):
+    parts = map(methodcaller('capitalize'), parts)
+    if not titled:
+        parts[0] = parts[0].lower()
+    return ''.join(parts)
+
+
+translate_to_title_case = partial(translate_to_camel_case, titled=True)
+
+
 def detect_case(text):
     """
     Detects the case of `text`.
     Consequent underscores treats as single.
-    Saves case (low or up) of characters in non important places.
+    Ignores enclosed underscores.
+    Ignores case (low or up) of characters in non important places.
 
     @param text: str
-    @returns one of ['camel', 'title', 'underscore', 'other']
+    @returns tuple
+        One of ['camel', 'title', 'underscore', 'other'] and
+        splitted text parts.
     """
 
-    splitted = filter(bool, text.split('_'))
+    parts = filter(bool, text.split('_'))
 
-    if not splitted:
+    if not parts:
         # text is collection of underscores
-        return 'other'
+        return 'other', parts
 
-    if not all(part.isalnum() for part in splitted):
+    if not all(part.isalnum() for part in parts):
         # one or more text part contains not alpha-numeric characters
-        return 'other'
+        return 'other', parts
 
-    if len(splitted) != 1:
-        return 'underscore'
+    if len(parts) != 1:
+        return 'underscore', parts
 
-    if splitted[0][0].isupper():  # check first character
-        return 'title'
-    return 'camel'  # first character lower or not letter
-
-
-def translate_to_underscore_case(text):
-    underscored = ''
-    for ch in text:
-        if ch.isupper():
-            underscored += '_'
-        underscored += ch
-    return underscored.lower().strip('_')
+    if parts[0][0].isupper():  # check first character
+        return 'title', parts
+    return 'camel', parts  # first character lower or not letter
 
 
-def translate_to_camel_case(text, titled=False):
-    words = map(lambda x: x.capitalize(), text.split('_'))
-    if not titled:
-        words[0] = words[0].lower()
-    return ''.join(words)
-
-
+@ignore_enclosed_underscores
 def switch_case(text):
-    case = detect_case(text)
+    """
+    Switches in cycle the case of `text`:
+        camel -> underscore
+        underscore -> title
+        title -> camel
+
+    @param text: str
+    @returns str
+        With switched case.
+    """
+
+    case, parts = detect_case(text)
+    print case, parts
     if case == 'camel':
-        text = translate_to_underscore_case(text)
+        text = translate_to_underscore_case(parts)
     elif case == 'underscore':
-        text = translate_to_camel_case(text)
+        text = translate_to_title_case(parts)
+    elif case == 'title':
+        text = translate_to_camel_case(parts)
     else:
-        raise UnknownCase()
+        print 'err'
+        raise UnknownCase(text)
 
     return text
 
@@ -87,5 +120,4 @@ class SwitchCaseCommand(sublime_plugin.TextCommand):
                 text = switch_case(text)
                 self.view.replace(edit, region, text)
             except UnknownCase:
-                sublime.status_message('Unknown case type')
-                continue
+                sublime.status_message('Unknown case type for ')
