@@ -13,8 +13,8 @@ import sublime_plugin
 class UnknownCase(Exception):
     def __init__(self, text):
         super(UnknownCase, self).__init__(
-            'Unknown case for "{}"'.format(
-                strip_end_of_long_string(text, max_size=50)
+            'Unknown case for "{text}"'.format(
+                text=strip_end_of_long_string(text, max_size=50)
             ),
             text,
         )
@@ -53,32 +53,61 @@ translate_to_title_case = partial(translate_to_camel_case, titled=True)
 def detect_case(text):
     """
     Detects the case of `text`.
-    Consequent underscores treats as single.
-    Ignores enclosed underscores.
     Ignores case (low or up) of characters in non important places.
 
     @param text: str
-    @returns tuple
-        One of ['camel', 'title', 'underscore', 'other'] and
-        splitted text parts.
+    @returns one of ['camel', 'title', 'underscore', 'other', 'mixed'].
+        'mixed': both camel and underscore (ex: "handler")
     """
 
-    parts = filter(bool, text.split('_'))
-
+    parts = split_by_case(text, 'underscored')
     if not parts:
         # text is collection of underscores
-        return 'other', parts
+        return 'other'
 
     if not all(part.isalnum() for part in parts):
         # one or more text part contains not alpha-numeric characters
-        return 'other', parts
+        return 'other'
 
     if len(parts) != 1:
-        return 'underscore', parts
+        return 'underscore'
 
+    parts = split_by_case(parts[0], 'camel')
     if parts[0][0].isupper():  # check first character
-        return 'title', parts
-    return 'camel', parts  # first character lower or not letter
+        return 'title'
+
+    # first character lower or not letter
+
+    if len(parts) == 1:
+        return 'mixed'
+
+    return 'camel'
+
+
+def split_by_case(text, case):
+    """
+    Split `text` into parts corresponding to `case`.
+    In underscored mode:
+        * consequent underscores treats as single
+        * ignores enclosed underscores
+        * ignores case (low or up) of characters
+    In camel mode:
+        * splits between low-case and up-case character
+        * treats consequent upper characters as one part
+
+    @param text: str
+    @param case: one of ['underscore', 'camel']
+    @returns list
+        Splitted (corresponding to `case`) `text`.
+    """
+
+    if case == 'underscore':
+        return filter(bool, text.split('_'))
+    elif case == 'camel':
+        text = text.replace('|', '||')
+        text = re.sub(r'([a-z0-9])([A-Z])', r'\1|\2', text.replace('|', '||'))
+        return map(methodcaller('replace', '||', '|'), text.split('|'))
+    return [text]
 
 
 @ignore_enclosed_underscores
@@ -94,16 +123,20 @@ def switch_case(text):
         With switched case.
     """
 
-    case, parts = detect_case(text)
-    print case, parts
+    case = detect_case(text)
     if case == 'camel':
+        parts = split_by_case(text, 'camel')
         text = translate_to_underscore_case(parts)
     elif case == 'underscore':
+        parts = split_by_case(text, 'underscore')
         text = translate_to_title_case(parts)
     elif case == 'title':
+        parts = split_by_case(text, 'camel')
         text = translate_to_camel_case(parts)
+    elif case == 'mixed':
+        parts = split_by_case(text, 'camel')
+        text = translate_to_title_case(parts)
     else:
-        print 'err'
         raise UnknownCase(text)
 
     return text
