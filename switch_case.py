@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 
 import sublime
 import sublime_plugin
@@ -27,9 +27,10 @@ def translate_to_underscore_case(text):
     return underscored.lower().strip('_')
 
 
-def translate_to_camel_case(text):
+def translate_to_camel_case(text, titled=False):
     words = map(lambda x: x.capitalize(), text.split('_'))
-    words[0] = words[0].lower()
+    if not titled:
+        words[0] = words[0].lower()
     return ''.join(words)
 
 
@@ -38,7 +39,7 @@ class SwitchCaseCommand(sublime_plugin.TextCommand):
         for region in self.view.sel():
             text = self.view.substr(region)
             if not text:
-                return
+                continue
 
             case = detect_case(text)
             if case == 'camel':
@@ -47,6 +48,6 @@ class SwitchCaseCommand(sublime_plugin.TextCommand):
                 text = translate_to_camel_case(text)
             else:
                 sublime.status_message('Unknown case type')
-                return
+                continue
 
             self.view.replace(edit, region, text)

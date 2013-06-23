@@ -1,4 +1,4 @@
 Sublime Switch Case
 ===================
 
-Adds command to changing develompent case of identifier (like camelCase or under_scored) to Sublime Text 2.
+Adds command to changing identifier case between camelCase, underscored_case or TitleCase to Sublime Text 2.
