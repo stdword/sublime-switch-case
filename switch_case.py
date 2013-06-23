@@ -118,6 +118,26 @@ def switch_case(text):
     @param text: str
     @returns str
         With switched case.
+
+    >>> switch_case('__')
+    '__'
+
+    >>> switch_case('__single___')
+    '__Single___'
+    >>> switch_case('__Single')
+    '__single'
+
+    >>> switch_case('under_scored')
+    'UnderScored'
+    >>> switch_case('UnderScored')
+    'underScored'
+    >>> switch_case('underScored')
+    'under_scored'
+
+    >>> switch_case('HTTPResponse')
+    'http_response'
+    >>> switch_case('http_response')
+    'HttpResponse'
     """
 
     case = detect_case(text)
@@ -137,3 +157,11 @@ def switch_case(text):
         raise UnknownCase(text)
 
     return text
+
+
+###############################################################################
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
