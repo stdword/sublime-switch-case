@@ -6,9 +6,6 @@ import re
 from functools import wraps, partial
 from operator import methodcaller
 
-import sublime
-import sublime_plugin
-
 
 class UnknownCase(Exception):
     def __init__(self, text):
@@ -140,17 +137,3 @@ def switch_case(text):
         raise UnknownCase(text)
 
     return text
-
-
-class SwitchCaseCommand(sublime_plugin.TextCommand):
-    def run(self, edit):
-        for region in self.view.sel():
-            text = self.view.substr(region)
-            if not text:
-                continue
-
-            try:
-                text = switch_case(text)
-                self.view.replace(edit, region, text)
-            except UnknownCase:
-                sublime.status_message('Unknown case type for ')
