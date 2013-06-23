@@ -2,10 +2,9 @@
 
 from __future__ import unicode_literals
 
-import sublime
 import sublime_plugin
 
-from switch_case import switch_case, UnknownCase
+from switch_case import switch_case
 
 
 class SwitchCaseCommand(sublime_plugin.TextCommand):
@@ -15,8 +14,5 @@ class SwitchCaseCommand(sublime_plugin.TextCommand):
             if not text:
                 continue
 
-            try:
-                text = switch_case(text)
-                self.view.replace(edit, region, text)
-            except UnknownCase:
-                sublime.status_message('Unknown case type for ')
+            text = switch_case(text)
+            self.view.replace(edit, region, text)
