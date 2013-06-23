@@ -7,24 +7,6 @@ from functools import wraps, partial
 from operator import methodcaller
 
 
-class UnknownCase(Exception):
-    def __init__(self, text):
-        super(UnknownCase, self).__init__(
-            'Unknown case for "{text}"'.format(
-                text=strip_end_of_long_string(text, max_size=50)
-            ),
-            text,
-        )
-
-
-def strip_end_of_long_string(string, max_size=79, end_plug='...'):
-    stripped = string[:max_size]
-    if end_plug:
-        if len(stripped) != len(string):
-            stripped = stripped[:-len(end_plug)] + end_plug
-    return stripped
-
-
 def ignore_enclosed_underscores(func):
     @wraps(func)
     def wrapper(text):
@@ -153,8 +135,6 @@ def switch_case(text):
     elif case == 'mixed':
         parts = split_by_case(text, 'camel')
         text = translate_to_title_case(parts)
-    else:
-        raise UnknownCase(text)
 
     return text
 
