@@ -110,7 +110,7 @@ def split_by_case(text, case):
 @ignore_enclosed_underscores
 def switch_case(text):
     """
-    Switches in cycle the case of `text`:
+    Cycle-switches the case of `text`:
         camel -> underscore
         underscore -> title
         title -> camel
