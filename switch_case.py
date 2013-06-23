@@ -16,7 +16,7 @@ def ignore_enclosed_underscores(func):
 
 
 def translate_to_underscore_case(parts):
-    return '_'.join(part[0].lower() + part[1:] for part in parts)
+    return '_'.join(part.lower() for part in parts)
 
 
 def translate_to_camel_case(parts, titled=False):
@@ -32,14 +32,13 @@ translate_to_title_case = partial(translate_to_camel_case, titled=True)
 def detect_case(text):
     """
     Detects the case of `text`.
-    Ignores case (low or up) of characters in non important places.
 
     @param text: str
     @returns one of ['camel', 'title', 'underscore', 'other', 'mixed'].
         'mixed': both camel and underscore (ex: "handler")
     """
 
-    parts = split_by_case(text, 'underscored')
+    parts = split_by_case(text, 'underscore')
     if not parts:
         # text is collection of underscores
         return 'other'
@@ -84,7 +83,8 @@ def split_by_case(text, case):
         return filter(bool, text.split('_'))
     elif case == 'camel':
         text = text.replace('|', '||')
-        text = re.sub(r'([a-z0-9])([A-Z])', r'\1|\2', text.replace('|', '||'))
+        text = re.sub(r'([a-z0-9])([A-Z])', r'\1|\2', text)
+        text = re.sub(r'([A-Z]+)([A-Z])', r'\1|\2', text)
         return map(methodcaller('replace', '||', '|'), text.split('|'))
     return [text]
 
@@ -102,24 +102,29 @@ def switch_case(text):
         With switched case.
 
     >>> switch_case('__')
-    '__'
+    u'__'
 
     >>> switch_case('__single___')
-    '__Single___'
+    u'__Single___'
     >>> switch_case('__Single')
-    '__single'
+    u'__single'
 
     >>> switch_case('under_scored')
-    'UnderScored'
+    u'UnderScored'
     >>> switch_case('UnderScored')
-    'underScored'
+    u'underScored'
     >>> switch_case('underScored')
-    'under_scored'
+    u'under_scored'
 
     >>> switch_case('HTTPResponse')
-    'http_response'
+    u'httpResponse'
+    >>> switch_case('httpResponse')
+    u'http_response'
     >>> switch_case('http_response')
-    'HttpResponse'
+    u'HttpResponse'
+
+    >>> switch_case('hTTP_response')
+    u'HttpResponse'
     """
 
     case = detect_case(text)
