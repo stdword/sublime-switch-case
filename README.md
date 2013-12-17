@@ -1,4 +1,10 @@
 Sublime Switch Case
 ===================
 
-Adds command for changing identifier case between camelCase, underscored_case or TitleCase to Sublime Text 2.
+Switching between camelCase, under_scored and TitleCase in Sublime Text 2.
+
+
+Usage
+-----
+1. Select text.
+2. Type `ctrl+shift+c` or click `Switch Case` in context menu to change case.
